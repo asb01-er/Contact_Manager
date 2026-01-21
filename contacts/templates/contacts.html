@@ -1,50 +1,71 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div class="container mx-auto p-4">
+  <h1 class="text-4xl text-success mb-4">Contact Manager</h1>
 
-<div>
-    <h1 class="text-4xl text-success mb-4">Contact Manager</h1>
+  <!-- Add Contact Button -->
+  <button class="btn btn-primary mb-4" onclick="document.getElementById('contact_modal').showModal()">
+    Add New Contact
+  </button>
 
-    <button class="btn btn-primary mb-4" onclick="contact_modal.showModal()">
-      Add New Contact
-    </button>
-    {% include 'partials/add-contact-modal.html' %}
+  {% include 'partials/add-contact-modal.html' %}
 
-    <label class="input input-bordered flex items-center gap-2 mb-2">
-        <input 
-            type="text" 
-            class="grow" 
-            placeholder="Search" 
-            name="search" 
-            hx-get="{% url 'search' %}"
-            hx-trigger="keyup delay:500ms"
-            hx-target="#contacts-list"
-            hx-indicator="#spinner"
-            hx-on::before-request="document.getElementById('contacts-list').style.opacity = 0.4;"
-            hx-on::after-request="document.getElementById('contacts-list').style.opacity = 1.0;" />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          class="h-4 w-4 opacity-70">
-          <path
-            fill-rule="evenodd"
-            d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-            clip-rule="evenodd" />
-        </svg>
-        {% include 'partials/spinner.html' %}
-      </label>
+  <!-- Search Input -->
+  <label class="input input-bordered flex items-center gap-2 mb-4 w-full max-w-md">
+    <input
+      type="text"
+      name="search"
+      placeholder="Search by name or email"
+      class="grow"
+      hx-get="{% url 'search' %}"
+      hx-trigger="keyup changed delay:500ms"
+      hx-target="#contact-table-body"
+      hx-indicator="#spinner"
+      hx-on:beforeRequest="document.getElementById('contact-table-body').style.opacity=0.4;"
+      hx-on:afterRequest="document.getElementById('contact-table-body').style.opacity=1;"
+    />
+    {% include 'partials/spinner.html' %}
+  </label>
 
-    
-    {% include 'partials/contact-list.html' %}
+  <!-- Contact Table -->
+  <div class="overflow-x-auto">
+    <table class="table table-zebra table-pin-rows w-full">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Created At</th>
+          <th>Actions</th>
+          <th>Download Files</th>
+        </tr>
+      </thead>
+      <tbody id="contact-table-body">
+        {% for contact in contacts %}
+          {% include 'partials/contact-row.html' %}
+        {% empty %}
+          <tr class="no-contact-row">
+            <td colspan="5" class="text-center">No contacts found</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
-
+<!-- Optional: Global HTMX listeners -->
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    document.body.addEventListener('fail', () => {
-      document.getElementById('contact_modal').showModal();
-    });
+  document.body.addEventListener('htmx:afterSwap', (evt) => {
+    // Close modal after successful add
+    if (evt.detail.target.id === 'contact-table-body' && !document.querySelector('.error')) {
+      const modal = document.getElementById('contact_modal');
+      if (modal.open) modal.close();
+      modal.querySelector('form').reset();
+    }
+  });
+
+  document.body.addEventListener('htmx:responseError', (evt) => {
+    console.error('HTMX request failed:', evt.detail);
   });
 </script>
 {% endblock %}
